@@ -35,11 +35,11 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/adarsh/glowlog"
+    "url": "https://github.com/dixitadarsh/glowlog"
   },
-  "homepage": "https://github.com/adarsh/glowlog#readme",
+  "homepage": "https://github.com/dixitadarsh/glowlog#readme",
   "bugs": {
-    "url": "https://github.com/adarsh/glowlog/issues"
+    "url": "https://github.com/dixitadarsh/glowlog/issues"
   },
   "engines": {
     "node": ">=16.0.0"
