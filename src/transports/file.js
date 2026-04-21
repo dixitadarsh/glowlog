@@ -26,9 +26,7 @@ export class FileTransport {
     this.maxSizeMB = opts.maxSizeMB || 5;
     this.enabled  = opts.enabled !== false;
 
-    if (this.enabled) {
-      if (!fs.existsSync(this.dir)) fs.mkdirSync(this.dir, { recursive: true });
-    }
+    // Dir is created lazily on first write — not in constructor
   }
 
   _file() { return getFilename(this.rotation, this.dir, this.prefix); }
@@ -48,6 +46,8 @@ export class FileTransport {
   write(level, message, meta = {}) {
     if (!this.enabled) return;
     try {
+      // Create dir lazily on first write only
+      if (!fs.existsSync(this.dir)) fs.mkdirSync(this.dir, { recursive: true });
       const file = this._file();
       if (this._shouldRotate(file)) this._rotateSize(file);
 

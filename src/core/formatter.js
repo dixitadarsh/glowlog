@@ -1,4 +1,5 @@
 import { c, paint, stripAnsi, LEVEL_CONFIG } from '../utils/colors.js';
+import { getCallerInfo } from '../utils/caller.js';
 import { formatDate } from '../utils/date.js';
 
 const BOX_WIDTH = 60; // inner content width
@@ -91,6 +92,13 @@ export function formatTerminal(level, message, meta = {}, extra = {}) {
   const msgVal    = paint(String(message), ...col);
   lines.push(row(b, msgLabel + msgVal, col));
 
+  // File:Line row — auto detected caller
+  if (extra.caller) {
+    const srcLabel = paint('Source  : ', ...dim);
+    const srcVal   = paint(extra.caller.file + ':' + extra.caller.line, ...sec);
+    lines.push(row(b, srcLabel + srcVal, col));
+  }
+
   // Request ID if present
   if (extra.requestId) {
     const reqLabel = paint('Req ID  : ', ...dim);
@@ -181,6 +189,12 @@ export function formatBrowser(level, message, meta = {}, extra = {}) {
   // Build full format string
   let format = line1Format + '\n' + line2Format + '\n' + line3Format;
   let args   = [...line1Args, ...line2Args, ...line3Args];
+
+  // File:Line
+  if (extra.caller) {
+    format += `\n%c  Source  : %c${extra.caller.file}:${extra.caller.line}`;
+    args.push(s.meta, s.header);
+  }
 
   // Request ID
   if (extra.requestId) {

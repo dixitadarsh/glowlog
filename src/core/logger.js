@@ -4,6 +4,7 @@ import { formatTerminal, formatBrowser }                 from '../core/formatter
 import { redactObject, redactMessage }                   from '../plugins/redact.js';
 import { getRequestId }                                  from '../plugins/request.js';
 import { FileTransport }                                 from '../transports/file.js';
+import { getCallerInfo }                                  from '../utils/caller.js';
 
 const LEVEL_PRIORITY = { DEBUG: 0, INFO: 1, HTTP: 2, SUCCESS: 3, WARN: 4, ERROR: 5 };
 
@@ -40,10 +41,13 @@ export class GlowLogger {
       }
     }
 
-    // File transport (Node only)
+    // File transport (Node only) — strictly check file === true
     this._file = null;
-    if (this.config.file && isNode) {
-      this._file = new FileTransport(this.config.fileOptions);
+    if (this.config.file === true && isNode) {
+      this._file = new FileTransport({
+        ...this.config.fileOptions,
+        enabled: true,
+      });
     }
 
     // Auto-capture uncaught errors (Node only)
@@ -80,8 +84,12 @@ export class GlowLogger {
 
     const { msg, data } = this._prepare(message, meta);
 
-    // Include request ID from async context
+    // Auto-detect caller file + line number
     const extra = {};
+    const caller = getCallerInfo();
+    if (caller) extra.caller = caller;
+
+    // Include request ID from async context
     if (this.config.requestId && isNode) {
       const reqId = getRequestId();
       if (reqId) extra.requestId = reqId;
