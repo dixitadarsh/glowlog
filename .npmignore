@@ -1,0 +1,5 @@
+src/demo.js
+logs/
+*.log
+*.jsonl
+.DS_Store

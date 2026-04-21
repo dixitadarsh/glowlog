@@ -1,0 +1,6 @@
+node_modules/
+logs/
+*.log
+*.jsonl
+glowlog.config.json
+.DS_Store

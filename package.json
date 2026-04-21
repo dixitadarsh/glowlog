@@ -1,0 +1,48 @@
+{
+  "name": "glowlog",
+  "version": "2.0.0",
+  "description": "Beautiful box-style colorful logger for Node.js + Browser. Zero dependencies. Auto-redaction, request IDs, file rotation, serverless-safe.",
+  "main": "src/index.js",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.js",
+    "./request": "./src/plugins/request.js",
+    "./redact": "./src/plugins/redact.js",
+    "./serverless": "./src/plugins/serverless.js",
+    "./presets": "./src/presets/index.js"
+  },
+  "bin": {
+    "glowlog": "./bin/init.js"
+  },
+  "scripts": {
+    "demo": "node src/demo.js",
+    "prepublishOnly": "node -e \"console.log('✓ glowlog ready to publish')\""
+  },
+  "files": [
+    "src",
+    "bin",
+    "README.md",
+    "LICENSE"
+  ],
+  "keywords": [
+    "logger", "logging", "colorful", "beautiful", "terminal",
+    "browser", "nodejs", "express", "nestjs", "fastify",
+    "react", "angular", "vue", "file-rotation", "redaction",
+    "request-id", "correlation-id", "serverless", "lambda",
+    "zero-dependency", "structured-logging", "pino", "winston"
+  ],
+  "author": "Adarsh <dixitadarshdev@gmail.com>",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/adarsh/glowlog"
+  },
+  "homepage": "https://github.com/adarsh/glowlog#readme",
+  "bugs": {
+    "url": "https://github.com/adarsh/glowlog/issues"
+  },
+  "engines": {
+    "node": ">=16.0.0"
+  },
+  "dependencies": {}
+}
