@@ -1,6 +1,6 @@
 {
   "name": "glowlog",
-  "version": "4.0.0",
+  "version": "5.0.0",
   "description": "The last Node.js logger you'll ever need. Beautiful, configurable, zero dependencies.",
   "main": "src/index.js",
   "type": "module",
