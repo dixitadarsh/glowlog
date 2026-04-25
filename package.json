@@ -1,66 +1,33 @@
 {
   "name": "glowlog",
-  "version": "2.0.2",
-  "description": "Beautiful box-style colorful logger for Node.js + Browser. Zero dependencies. Auto-redaction, request IDs, file rotation, serverless-safe.",
+  "version": "3.0.0",
+  "description": "The last Node.js logger you'll ever need. Beautiful, configurable, zero dependencies.",
   "main": "src/index.js",
   "type": "module",
   "exports": {
-    ".": "./src/index.js",
-    "./request": "./src/plugins/request.js",
-    "./redact": "./src/plugins/redact.js",
-    "./serverless": "./src/plugins/serverless.js",
-    "./presets": "./src/presets/index.js"
+    ".":            "./src/index.js",
+    "./presets":    "./src/presets/index.js",
+    "./request":   "./src/plugins/request.js",
+    "./redact":    "./src/plugins/redact.js",
+    "./serverless":"./src/plugins/serverless.js"
   },
-  "bin": {
-    "glowlog": "./bin/init.js"
-  },
+  "bin": { "glowlog": "./bin/init.js" },
   "scripts": {
-    "demo": "node src/demo.js",
-    "prepublishOnly": "node -e \"console.log('✓ glowlog ready to publish')\""
+    "demo":   "node src/demo.js",
+    "init":   "node bin/init.js"
   },
-  "files": [
-    "src",
-    "bin",
-    "README.md",
-    "LICENSE"
-  ],
+  "files": ["src","bin","README.md","LICENSE"],
   "keywords": [
-    "logger",
-    "logging",
-    "colorful",
-    "beautiful",
-    "terminal",
-    "browser",
-    "nodejs",
-    "express",
-    "nestjs",
-    "fastify",
-    "react",
-    "angular",
-    "vue",
-    "file-rotation",
-    "redaction",
-    "request-id",
-    "correlation-id",
-    "serverless",
-    "lambda",
-    "zero-dependency",
-    "structured-logging",
-    "pino",
-    "winston"
+    "logger","logging","colorful","beautiful","terminal","browser",
+    "nodejs","express","nestjs","fastify","react","angular","vue",
+    "file-rotation","redaction","request-id","serverless","zero-dependency",
+    "structured-logging","child-logger","winston","pino","alternative"
   ],
-  "author": "Adarsh <dixitadarshdev@gmail.com>",
+  "author": "Adarsh",
   "license": "MIT",
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/dixitadarsh/glowlog"
-  },
-  "homepage": "https://github.com/dixitadarsh/glowlog#readme",
-  "bugs": {
-    "url": "https://github.com/dixitadarsh/glowlog/issues"
-  },
-  "engines": {
-    "node": ">=16.0.0"
-  },
+  "repository": { "type": "git", "url": "https://github.com/growbharatbiz/glowlog" },
+  "homepage": "https://glowlog.dev",
+  "bugs": { "url": "https://github.com/growbharatbiz/glowlog/issues" },
+  "engines": { "node": ">=16.0.0" },
   "dependencies": {}
 }

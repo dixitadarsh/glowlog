@@ -1,237 +1,351 @@
-import { c, paint, stripAnsi, LEVEL_CONFIG } from '../utils/colors.js';
-import { getCallerInfo } from '../utils/caller.js';
-import { formatDate } from '../utils/date.js';
+import { c, paint, bold, dim, gray, stripAnsi, LEVELS, BORDERS } from '../utils/colors.js';
+import { formatTimestamp } from '../utils/date.js';
+import { getHint } from '../utils/error-hints.js';
 
-const BOX_WIDTH = 60; // inner content width
+const BOX_W = 58; // inner content width
 
-// ── Box drawing helpers ───────────────────────────────────────────────────────
+// ── Helpers ───────────────────────────────────────────────────────────────────
 
-function hLine(b, width) {
-  return b.h.repeat(width + 2); // +2 for padding
+function pad(content, width) {
+  const visible = stripAnsi(String(content));
+  return content + ' '.repeat(Math.max(0, width - visible.length));
 }
 
-function topBorder(b, width, color) {
-  return paint(`  ${b.tl}${hLine(b, width)}${b.tr}`, ...color);
+function boxRow(b, content, colCodes) {
+  return paint(`  ${b.v} `, ...colCodes) + pad(content, BOX_W) + paint(` ${b.v}`, ...colCodes);
 }
 
-function bottomBorder(b, width, color) {
-  return paint(`  ${b.bl}${hLine(b, width)}${b.br}`, ...color);
+function hLine(b, w) { return b.h.repeat(w + 2); }
+function topLine(b, w, col)  { return paint(`  ${b.tl}${hLine(b,w)}${b.tr}`, ...col); }
+function midLine(b, w, col)  { return paint(`  ${b.lm}${hLine(b,w)}${b.rm}`, ...col); }
+function botLine(b, w, col)  { return paint(`  ${b.bl}${hLine(b,w)}${b.br}`, ...col); }
+
+function renderMeta(meta, level) {
+  if (!meta || typeof meta !== 'object') return [];
+  const cfg = LEVELS[level];
+  return Object.entries(meta)
+    .filter(([,v]) => v !== undefined && v !== null)
+    .map(([k, v]) => {
+      const isErr = v instanceof Error;
+      return { key: k, val: isErr ? v.message : String(v), isErr, errObj: isErr ? v : null };
+    });
 }
 
-function midBorder(b, width, color) {
-  return paint(`  ${b.lm}${hLine(b, width)}${b.rm}`, ...color);
+// ── STATUS COLORS for HTTP ────────────────────────────────────────────────────
+
+function httpStatusColor(status) {
+  if (status >= 200 && status < 300) return [c.bold, c.bGreen];
+  if (status >= 300 && status < 400) return [c.bold, c.bYellow];
+  if (status >= 400) return [c.bold, c.bRed];
+  return [c.gray];
 }
 
-function row(b, content, color) {
-  // content is already colored — measure visible length via stripAnsi
-  const visible = stripAnsi(content);
-  const pad = Math.max(0, BOX_WIDTH - visible.length);
-  return paint(`  ${b.v} `, ...color) + content + ' '.repeat(pad) + paint(` ${b.v}`, ...color);
+function httpMsColor(ms) {
+  if (ms > 1000) return [c.bRed];
+  if (ms > 300)  return [c.bYellow];
+  return [c.dim, c.gray];
 }
 
-// ── Error translator ──────────────────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════════════════════
+// STYLE: BOX
+// ═══════════════════════════════════════════════════════════════════════════════
 
-const ERROR_MAP = {
-  'ECONNREFUSED':    'Could not connect — is the server/database running?',
-  'ENOTFOUND':       'Server not found — check the URL or internet connection',
-  'ETIMEDOUT':       'Request timed out — server took too long to respond',
-  'EACCES':          'Permission denied — may need admin/sudo access',
-  'ENOENT':          'File or folder not found — check the path',
-  'EADDRINUSE':      'Port already in use — try a different port',
-  'MODULE_NOT_FOUND':'Module not found — did you run npm install?',
-  '404':             'Not found — resource does not exist',
-  '401':             'Unauthorized — check API key or login credentials',
-  '403':             'Forbidden — you do not have permission',
-  '500':             'Server error — something broke on the server side',
-  '503':             'Service unavailable — server is down or overloaded',
-  'SyntaxError':     'Syntax error — check for missing brackets or commas',
-  'TypeError':       'Wrong data type — a variable has unexpected value',
-  'ReferenceError':  'Variable not defined — check for typos',
-};
+export function renderBox(level, message, meta, extra, cfg) {
+  const lvl    = LEVELS[level];
+  const bType  = lvl.border;
+  const b      = BORDERS[bType];
+  const col    = lvl.color;
+  const dimCol = lvl.dim;
+  const show   = cfg.show || {};
+  const lines  = [];
+  const ts     = cfg.show?.timestamp !== false ? formatTimestamp(cfg.timeFormat || 'HH:MM:SS') : null;
 
-function toSimpleEnglish(error) {
-  if (!error) return null;
-  const msg = error.message || error.code || String(error);
-  for (const [key, val] of Object.entries(ERROR_MAP)) {
-    if (msg.includes(key)) return val;
-  }
-  return null;
-}
+  lines.push('');
+  lines.push(topLine(b, BOX_W, col));
 
-// ── TERMINAL FORMATTER ────────────────────────────────────────────────────────
+  // Level header
+  const iconStr  = show.icon !== false ? paint(`${lvl.icon}  `, ...col) : '';
+  const labelStr = show.label !== false ? paint(lvl.label, ...col) : '';
+  lines.push(boxRow(b, iconStr + labelStr, col));
 
-export function formatTerminal(level, message, meta = {}, extra = {}) {
-  const cfg  = LEVEL_CONFIG[level];
-  const b    = cfg.border;
-  const col  = cfg.primary;
-  const sec  = cfg.secondary;
-  const dim  = cfg.dim;
-  const date = formatDate();
+  // Divider after header
+  if (show.divider !== false) lines.push(midLine(b, BOX_W, dimCol));
 
-  const lines = [];
-  lines.push(''); // blank line before
-
-  // Top border
-  lines.push(topBorder(b, BOX_WIDTH, col));
-
-  // Level header row  —  ⚠  WARNING
-  const headerText = `${cfg.icon}  ${cfg.label}`;
-  const headerColored = paint(headerText, ...col);
-  lines.push(row(b, headerColored, col));
-
-  // Mid divider
-  lines.push(midBorder(b, BOX_WIDTH, dim));
-
-  // Date row
-  const dateLabel = paint('Date    : ', ...dim);
-  const dateVal   = paint(date, ...sec);
-  lines.push(row(b, dateLabel + dateVal, col));
-
-  // Message row
-  const msgLabel  = paint('Message : ', ...dim);
-  const msgVal    = paint(String(message), ...col);
-  lines.push(row(b, msgLabel + msgVal, col));
-
-  // File:Line row — auto detected caller
-  if (extra.caller) {
-    const srcLabel = paint('Source  : ', ...dim);
-    const srcVal   = paint(extra.caller.file + ':' + extra.caller.line, ...sec);
-    lines.push(row(b, srcLabel + srcVal, col));
+  // Timestamp / Date
+  if (ts) {
+    lines.push(boxRow(b, paint('Time     : ', ...dimCol) + paint(ts, ...col), col));
   }
 
-  // Request ID if present
-  if (extra.requestId) {
-    const reqLabel = paint('Req ID  : ', ...dim);
-    const reqVal   = paint(extra.requestId, ...sec);
-    lines.push(row(b, reqLabel + reqVal, col));
+  // Message
+  lines.push(boxRow(b, paint('Message  : ', ...dimCol) + paint(String(message), ...col), col));
+
+  // Source file:line
+  if (show.source !== false && extra.caller) {
+    lines.push(boxRow(b,
+      paint('Source   : ', ...dimCol) + paint(`${extra.caller.file}:${extra.caller.line}`, ...dimCol),
+      col
+    ));
   }
 
-  // Meta section — only if there's actual data
-  const metaEntries = Object.entries(meta).filter(([, v]) => v !== undefined && v !== null);
+  // Request ID
+  if (show.requestId !== false && extra.requestId) {
+    lines.push(boxRow(b,
+      paint('Req ID   : ', ...dimCol) + paint(extra.requestId, ...dimCol),
+      col
+    ));
+  }
 
-  if (metaEntries.length > 0) {
-    lines.push(midBorder(b, BOX_WIDTH, dim));
+  // Child module name
+  if (extra.module) {
+    lines.push(boxRow(b,
+      paint('Module   : ', ...dimCol) + paint(extra.module, ...col),
+      col
+    ));
+  }
 
-    for (const [key, val] of metaEntries) {
-      const isError = val instanceof Error;
-      const displayVal = isError ? val.message : String(val);
-      const keyStr = paint((key + ' ').padEnd(8, ' ') + ': ', ...dim);
-      const valStr = paint(displayVal, ...cfg.meta);
-      lines.push(row(b, keyStr + valStr, col));
+  // HTTP fields
+  if (extra.method) {
+    if (show.divider !== false) lines.push(midLine(b, BOX_W, dimCol));
+    lines.push(boxRow(b, paint('Method   : ', ...dimCol) + paint(extra.method, c.bold, c.bBlue), col));
+    lines.push(boxRow(b, paint('URL      : ', ...dimCol) + paint(extra.url, ...col), col));
+    lines.push(boxRow(b, paint('Status   : ', ...dimCol) + paint(String(extra.status), ...httpStatusColor(extra.status)), col));
+    lines.push(boxRow(b, paint('Time     : ', ...dimCol) + paint(`${extra.ms}ms`, ...httpMsColor(extra.ms)), col));
+  }
+
+  // Meta section
+  const metaRows = show.meta !== false ? renderMeta(meta, level) : [];
+  if (metaRows.length > 0) {
+    if (show.divider !== false) lines.push(midLine(b, BOX_W, dimCol));
+    for (const { key, val, isErr, errObj } of metaRows) {
+      const keyStr = paint((key + ' ').padEnd(8) + ': ', ...dimCol);
+      const valStr = paint(val, ...lvl.color);
+      lines.push(boxRow(b, keyStr + valStr, col));
 
       // Error hint
-      if (isError) {
-        const hint = toSimpleEnglish(val);
-        if (hint) {
-          const hintKey = paint('  hint'.padEnd(8, ' ') + '  ', ...dim);
-          const hintVal = paint('→ ' + hint, '\x1b[33m');
-          lines.push(row(b, hintKey + hintVal, col));
-        }
-        // Stack trace (first 2 lines only)
-        if (val.stack) {
-          const stackLines = val.stack.split('\n').slice(1, 3);
-          for (const sl of stackLines) {
-            const stackStr = paint('  ' + sl.trim(), ...dim);
-            lines.push(row(b, stackStr, col));
-          }
-        }
+      if (isErr && show.hint !== false) {
+        const hint = getHint(errObj);
+        if (hint) lines.push(boxRow(b, paint('  ' + hint, c.yellow), col));
+      }
+
+      // Stack trace
+      if (isErr && show.stack === true && errObj.stack) {
+        errObj.stack.split('\n').slice(1, 3).forEach(sl => {
+          lines.push(boxRow(b, paint('  ' + sl.trim(), ...dimCol), col));
+        });
       }
     }
   }
 
-  // HTTP specific extra info
-  if (extra.method) {
-    lines.push(midBorder(b, BOX_WIDTH, dim));
+  lines.push(botLine(b, BOX_W, col));
 
-    // Status color
-    let statusCol = dim;
-    if (extra.status >= 200 && extra.status < 300) statusCol = ['\x1b[1m', '\x1b[92m'];
-    else if (extra.status >= 300 && extra.status < 400) statusCol = ['\x1b[1m', '\x1b[93m'];
-    else if (extra.status >= 400) statusCol = ['\x1b[1m', '\x1b[91m'];
-
-    const msCol = extra.ms > 1000 ? ['\x1b[91m'] : extra.ms > 300 ? ['\x1b[93m'] : dim;
-
-    lines.push(row(b, paint('Method  : ', ...dim) + paint(extra.method, '\x1b[1m', '\x1b[94m'), col));
-    lines.push(row(b, paint('URL     : ', ...dim) + paint(extra.url, ...sec), col));
-    lines.push(row(b, paint('Status  : ', ...dim) + paint(String(extra.status), ...statusCol), col));
-    lines.push(row(b, paint('Time    : ', ...dim) + paint(extra.ms + 'ms', ...msCol), col));
-  }
-
-  // Bottom border
-  lines.push(bottomBorder(b, BOX_WIDTH, col));
-  lines.push(''); // blank line after
+  // Spacing
+  const space = cfg.spacing ?? 1;
+  for (let i = 0; i < space; i++) lines.push('');
 
   return lines.join('\n');
 }
 
-// ── BROWSER FORMATTER ─────────────────────────────────────────────────────────
-// Returns array of args for console.log(...args)
+// ═══════════════════════════════════════════════════════════════════════════════
+// STYLE: LINE
+// ═══════════════════════════════════════════════════════════════════════════════
 
-export function formatBrowser(level, message, meta = {}, extra = {}) {
-  const cfg  = LEVEL_CONFIG[level];
-  const s    = cfg.browser;
-  const date = formatDate();
+export function renderLine(level, message, meta, extra, cfg) {
+  const lvl  = LEVELS[level];
+  const col  = lvl.color;
+  const dim_ = lvl.dim;
+  const show = cfg.show || {};
+  const ts   = show.timestamp !== false ? formatTimestamp(cfg.timeFormat || 'HH:MM:SS') : null;
+  const W    = 62;
+  const lines = [];
 
-  const metaEntries = Object.entries(meta).filter(([, v]) => v !== undefined);
+  lines.push(paint('  ' + '─'.repeat(W), ...dim_));
 
-  // Line 1: badge + level
-  const line1Format = `%c ${cfg.icon} ${cfg.label} %c`;
-  const line1Args   = [s.badge, ''];
+  // Main line: icon  label  time  source  →  message
+  let main = '  ';
+  if (show.icon  !== false) main += paint(lvl.icon + ' ', ...col);
+  if (show.label !== false) main += paint(lvl.label.padEnd(7), ...col) + '  ';
+  if (ts)                   main += gray(ts + '  ');
+  if (show.source !== false && extra.caller) main += gray(`${extra.caller.file}:${extra.caller.line}  `);
+  if (extra.module)         main += gray(`[${extra.module}]  `);
+  main += paint('→ ', c.dim) + paint(String(message), ...col);
+  lines.push(main);
 
-  // Line 2: date
-  const line2Format = `%c  Date    : %c${date}`;
-  const line2Args   = [s.meta, s.header];
+  // Meta inline
+  const metaRows = show.meta !== false ? renderMeta(meta, level) : [];
+  if (metaRows.length > 0) {
+    let metaLine = '      ';
+    for (const { key, val, isErr, errObj } of metaRows) {
+      metaLine += gray(key + '=') + paint(val, ...dim_) + '  ';
+      if (isErr && show.hint !== false) {
+        const hint = getHint(errObj);
+        if (hint) metaLine += paint(hint, c.yellow) + '  ';
+      }
+    }
+    lines.push(metaLine);
+  }
 
-  // Line 3: message
-  const line3Format = `%c  Message : %c${message}`;
-  const line3Args   = [s.meta, s.header];
-
-  // Build full format string
-  let format = line1Format + '\n' + line2Format + '\n' + line3Format;
-  let args   = [...line1Args, ...line2Args, ...line3Args];
-
-  // File:Line
-  if (extra.caller) {
-    format += `\n%c  Source  : %c${extra.caller.file}:${extra.caller.line}`;
-    args.push(s.meta, s.header);
+  // HTTP extra
+  if (extra.method) {
+    const stCol = httpStatusColor(extra.status);
+    const msCol = httpMsColor(extra.ms);
+    lines.push(
+      '      ' +
+      paint(extra.method.padEnd(6), c.bold, c.bBlue) +
+      gray(extra.url + '  ') +
+      paint(String(extra.status), ...stCol) + '  ' +
+      paint(extra.ms + 'ms', ...msCol)
+    );
   }
 
   // Request ID
-  if (extra.requestId) {
-    format += `\n%c  Req ID  : %c${extra.requestId}`;
-    args.push(s.meta, s.header);
+  if (show.requestId !== false && extra.requestId) {
+    lines.push('      ' + gray('req: ') + paint(extra.requestId, ...dim_));
   }
 
-  // HTTP info
+  lines.push(paint('  ' + '─'.repeat(W), ...dim_));
+
+  const space = cfg.spacing ?? 1;
+  for (let i = 0; i < space; i++) lines.push('');
+
+  return lines.join('\n');
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// STYLE: COMPACT  (everything on one line)
+// ═══════════════════════════════════════════════════════════════════════════════
+
+export function renderCompact(level, message, meta, extra, cfg) {
+  const lvl  = LEVELS[level];
+  const col  = lvl.color;
+  const show = cfg.show || {};
+  const ts   = show.timestamp !== false ? formatTimestamp(cfg.timeFormat || 'HH:MM:SS') : null;
+
+  let line = '  ';
+  if (show.icon  !== false) line += paint(lvl.icon + ' ', ...col);
+  if (ts)                   line += gray(ts + '  ');
+  if (show.label !== false) line += paint(lvl.label.padEnd(7), ...col) + '  ';
+  if (show.source !== false && extra.caller) line += gray(`${extra.caller.file}:${extra.caller.line}  `);
+  if (extra.module)         line += gray(`[${extra.module}]  `);
+  line += paint('→ ', c.dim) + paint(String(message), ...col);
+
+  // HTTP
   if (extra.method) {
-    format += `\n%c  ────────────────────────────────────\n%c  ${extra.method}  ${extra.url}  ${extra.status}  ${extra.ms}ms`;
-    args.push(s.border, s.header);
+    line += '  ' + paint(extra.method, c.bold, c.bBlue) +
+            ' ' + gray(extra.url) +
+            ' ' + paint(String(extra.status), ...httpStatusColor(extra.status)) +
+            ' ' + paint(extra.ms + 'ms', ...httpMsColor(extra.ms));
   }
 
-  // Meta entries
-  if (metaEntries.length > 0) {
-    format += `\n%c  ────────────────────────────────────`;
-    args.push(s.border);
-
-    for (const [key, val] of metaEntries) {
-      const displayVal = val instanceof Error ? val.message : String(val);
-      format += `\n%c  ${(key + ' ').padEnd(8)}: %c${displayVal}`;
-      args.push(s.meta, s.header);
-
-      if (val instanceof Error) {
-        const hint = toSimpleEnglish(val);
-        if (hint) {
-          format += `\n%c  → ${hint}`;
-          args.push('color:#f59e0b;font-size:11px');
-        }
+  // Meta
+  if (show.meta !== false) {
+    const metaRows = renderMeta(meta, level);
+    for (const { key, val, isErr, errObj } of metaRows) {
+      line += `  ${gray(key+'=')}${paint(val, ...lvl.dim)}`;
+      if (isErr && show.hint !== false) {
+        const hint = getHint(errObj);
+        if (hint) line += '  ' + paint(hint, c.yellow);
       }
     }
   }
 
-  format += `\n%c  ════════════════════════════════════`;
-  args.push(s.border);
+  if (show.requestId !== false && extra.requestId) {
+    line += '  ' + gray('req=') + paint(extra.requestId, ...lvl.dim);
+  }
 
-  return [format, ...args];
+  const space = cfg.spacing ?? 0;
+  const out = [line];
+  for (let i = 0; i < space; i++) out.push('');
+  return out.join('\n');
 }
 
-export { toSimpleEnglish };
+// ═══════════════════════════════════════════════════════════════════════════════
+// STYLE: MINIMAL  (icon + message only)
+// ═══════════════════════════════════════════════════════════════════════════════
+
+export function renderMinimal(level, message, meta, extra, cfg) {
+  const lvl = LEVELS[level];
+  const show = cfg.show || {};
+
+  let line = '  ';
+  if (show.icon !== false) line += paint(lvl.icon + '  ', ...lvl.color);
+  line += paint(String(message), ...lvl.color);
+
+  // Errors still show hint in minimal
+  if (show.hint !== false && meta) {
+    const metaRows = renderMeta(meta, level);
+    for (const { isErr, errObj } of metaRows) {
+      if (isErr) {
+        const hint = getHint(errObj);
+        if (hint) line += '  ' + paint(hint, c.yellow);
+      }
+    }
+  }
+
+  const space = cfg.spacing ?? 0;
+  const out = [line];
+  for (let i = 0; i < space; i++) out.push('');
+  return out.join('\n');
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// BROWSER (CSS styled console groups)
+// ═══════════════════════════════════════════════════════════════════════════════
+
+export function renderBrowser(level, message, meta, extra, cfg) {
+  const lvl  = LEVELS[level];
+  const s    = lvl.browser;
+  const show = cfg.show || {};
+  const ts   = show.timestamp !== false ? formatTimestamp(cfg.timeFormat || 'HH:MM:SS') : '';
+
+  const badgeStyle = `${s.badge};padding:2px 8px;border-radius:4px;font-weight:700;font-size:11px;letter-spacing:1px`;
+  const textStyle  = `${s.text};font-weight:600;font-size:12px`;
+  const metaStyle  = `${s.text};font-size:11px;opacity:0.8`;
+  const dimStyle   = 'color:gray;font-size:11px';
+
+  let fmt  = `%c ${lvl.icon} ${lvl.label} %c`;
+  let args = [badgeStyle, ''];
+
+  if (ts) { fmt += ` %c${ts}%c`; args.push(dimStyle, ''); }
+  fmt += ` %c${message}%c`; args.push(textStyle, '');
+
+  if (extra.caller && show.source !== false) {
+    fmt += ` %c${extra.caller.file}:${extra.caller.line}%c`;
+    args.push(dimStyle, '');
+  }
+
+  if (extra.requestId && show.requestId !== false) {
+    fmt += `\n%c  req: ${extra.requestId}%c`;
+    args.push(metaStyle, '');
+  }
+
+  if (extra.method) {
+    fmt += `\n%c  ${extra.method} ${extra.url} ${extra.status} ${extra.ms}ms%c`;
+    args.push(textStyle, '');
+  }
+
+  if (show.meta !== false && meta) {
+    const metaRows = renderMeta(meta, level);
+    for (const { key, val, isErr, errObj } of metaRows) {
+      fmt += `\n%c  ${key}: ${val}%c`;
+      args.push(metaStyle, '');
+      if (isErr && show.hint !== false) {
+        const hint = getHint(errObj);
+        if (hint) { fmt += `\n%c  ${hint}%c`; args.push('color:#f59e0b;font-size:11px', ''); }
+      }
+    }
+  }
+
+  return [fmt, ...args];
+}
+
+// Banner for startup
+export function renderBanner(text, col = ['\x1b[1m','\x1b[96m']) {
+  const w = Math.max(text.length + 6, 50);
+  return [
+    '',
+    paint('  ╔' + '═'.repeat(w) + '╗', ...col),
+    paint('  ║', ...col) + '  ' + paint(text, '\x1b[1m', '\x1b[96m') + ' '.repeat(w - text.length - 2) + '  ' + paint('║', ...col),
+    paint('  ╚' + '═'.repeat(w) + '╝', ...col),
+    '',
+  ].join('\n');
+}

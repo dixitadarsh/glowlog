@@ -1,21 +1,11 @@
-// Core
-export { GlowLogger }                                          from './core/logger.js';
-
-// Plugins
+export { GlowLogger }                                              from './core/logger.js';
+export { dev, prod, ci, neat, nest }                               from './presets/index.js';
 export { requestIdMiddleware, withContext, getRequestId, setContext } from './plugins/request.js';
-export { redactObject, redactMessage, addSensitiveKey }         from './plugins/redact.js';
-export { flushLogs, withLogFlush, registerExitFlush }           from './plugins/serverless.js';
+export { redactObject, redactMessage, addSensitiveKey }            from './plugins/redact.js';
+export { flushLogs, withLogFlush }                                 from './plugins/serverless.js';
+export { FileTransport }                                           from './transports/file.js';
+export { isBrowser, isNode, isProd, isServerless }                 from './utils/env.js';
 
-// Transports
-export { FileTransport }                                        from './transports/file.js';
-
-// Presets
-export { createDevLogger, createProductionLogger, createFullLogger, createNestLogger } from './presets/index.js';
-
-// Utils
-export { isBrowser, isNode, isProduction, isServerless }        from './utils/env.js';
-export { formatDate }                                           from './utils/date.js';
-
-// Default logger — zero config, works immediately
+// Default logger — zero config
 import { GlowLogger } from './core/logger.js';
-export const logger = new GlowLogger({ name: 'app', catchErrors: false });
+export const logger = new GlowLogger({ catchErrors: false });

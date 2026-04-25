@@ -1,41 +1,62 @@
-# glowlog ◆
+# ◆ glowlog
 
-> Beautiful box-style colorful logger for **Node.js** and **Browser**.  
-> Zero dependencies. One package replaces Winston + pino-pretty + morgan + redaction + correlation IDs.
+> **The last Node.js logger you'll ever need.**
+> Beautiful. Configurable. Zero dependencies.
+
+[![npm version](https://img.shields.io/npm/v/glowlog?color=39d0d8&labelColor=0d1117&style=flat-square)](https://www.npmjs.com/package/glowlog)
+[![npm downloads](https://img.shields.io/npm/dm/glowlog?color=3ddc84&labelColor=0d1117&style=flat-square)](https://www.npmjs.com/package/glowlog)
+[![License: MIT](https://img.shields.io/badge/license-MIT-f0c429?labelColor=0d1117&style=flat-square)](LICENSE)
+[![Zero deps](https://img.shields.io/badge/dependencies-0-c678dd?labelColor=0d1117&style=flat-square)](package.json)
 
 ```
+  ┌──────────────────────────────────────────────────────────────┐
+  │ ●  INFO                                                      │
+  ├──────────────────────────────────────────────────────────────┤
+  │ Time     : 09:15:42                                          │
+  │ Message  : Server started                                    │
+  │ Source   : server.js:12                                      │
+  ├──────────────────────────────────────────────────────────────┤
+  │ port     : 3000                                              │
+  │ env      : development                                       │
+  └──────────────────────────────────────────────────────────────┘
+
   ╔══════════════════════════════════════════════════════════════╗
   ║ ✗  ERROR                                                     ║
   ╠══════════════════════════════════════════════════════════════╣
-  ║ Date    : Tuesday, 21 April 2026  9:15:42 AM                 ║
-  ║ Message : Database connection failed                         ║
+  ║ Time     : 09:15:45                                          ║
+  ║ Message  : DB connection failed                              ║
   ╠══════════════════════════════════════════════════════════════╣
-  ║ error   : ECONNREFUSED: Connection refused 127.0.0.1:5432    ║
-  ║   hint  → Could not connect — is the server/database running?║
+  ║ error    : ECONNREFUSED: 127.0.0.1:5432                      ║
+  ║   → Could not connect — is the server/database running?      ║
   ╚══════════════════════════════════════════════════════════════╝
 ```
 
 ---
 
-## Install
+## 📦 Why glowlog?
+
+| What you used to install | With glowlog |
+|---|---|
+| `winston` + `winston-daily-rotate-file` + `morgan` + `pino-pretty` + `cls-hooked` + redaction lib | `glowlog` |
+| 6 packages, 200KB+ | **1 package, ~17KB** |
+
+---
+
+## 🚀 Install
 
 ```bash
 npm install glowlog
 ```
 
----
-
-## Setup in 30 seconds
-
+**Setup wizard (optional):**
 ```bash
 npx glowlog init
 ```
-
-Asks **3 questions** → writes `glowlog.config.json`. Done.
+Asks 4 questions → generates `glowlog.config.json`. Done.
 
 ---
 
-## Quick Start
+## ⚡ Quick Start
 
 ```js
 import { GlowLogger } from 'glowlog';
@@ -44,7 +65,7 @@ const logger = new GlowLogger();
 
 logger.info('Server started', { port: 3000 });
 logger.success('User registered', { userId: 'u_001' });
-logger.warn('Rate limit close', { used: 95, limit: 100 });
+logger.warn('Rate limit', { used: 95, limit: 100 });
 logger.error('DB failed', new Error('ECONNREFUSED'));
 logger.debug('Query ran', { ms: 12, rows: 47 });
 logger.http('POST', '/api/login', 200, 123);
@@ -52,116 +73,144 @@ logger.http('POST', '/api/login', 200, 123);
 
 ---
 
-## What It Looks Like
+## 🎨 4 Display Styles
 
-**INFO / SUCCESS / DEBUG** → single border, level color
-
-```
-  ┌──────────────────────────────────────────────────────────────┐
-  │ ●  INFO                                                      │
-  ├──────────────────────────────────────────────────────────────┤
-  │ Date    : Tuesday, 21 April 2026  9:15:42 AM                 │
-  │ Message : Server started                                     │
-  ├──────────────────────────────────────────────────────────────┤
-  │ port    : 3000                                               │
-  └──────────────────────────────────────────────────────────────┘
-```
-
-**WARN / ERROR** → double border, prominent
+### `box` — Full bordered boxes (default, great for development)
 
 ```
-  ╔══════════════════════════════════════════════════════════════╗
-  ║ ⚠  WARNING                                                   ║
-  ╠══════════════════════════════════════════════════════════════╣
-  ║ Date    : Tuesday, 21 April 2026  9:15:42 AM                 ║
-  ║ Message : Rate limit approaching                             ║
-  ╠══════════════════════════════════════════════════════════════╣
-  ║ used    : 95                                                 ║
-  ║ limit   : 100                                                ║
-  ╚══════════════════════════════════════════════════════════════╝
+  ┌──────────────────────────────────────────┐     ╔══════════════════════════════════════════╗
+  │ ●  INFO                                  │     ║ ⚠  WARNING                               ║
+  ├──────────────────────────────────────────┤     ╠══════════════════════════════════════════╣
+  │ Time    : 09:15:42                       │     ║ Time    : 09:15:44                        ║
+  │ Message : Server started                 │     ║ Message : Rate limit approaching          ║
+  └──────────────────────────────────────────┘     ╚══════════════════════════════════════════╝
 ```
 
-**Browser** → CSS-styled grouped console output — same API, auto-detected.
+INFO/SUCCESS/DEBUG = **single border** · WARN/ERROR = **double border**
+
+### `line` — Separator lines (staging / readable)
+
+```
+  ──────────────────────────────────────────────────
+  ● INFO  09:15:42  server.js:12
+    → Server started  port=3000
+  ──────────────────────────────────────────────────
+```
+
+### `compact` — One line per log (production)
+
+```
+  ● 09:15:42  INFO     → Server started  port=3000
+  ✓ 09:15:43  SUCCESS  → User registered  userId=u_001
+  ⚠ 09:15:44  WARN     → Rate limit  used=95  limit=100
+  ✗ 09:15:45  ERROR    → DB failed  error=ECONNREFUSED  → Is your DB running?
+```
+
+### `minimal` — Icon + message only (CI / scripts)
+
+```
+  ●  Server started
+  ✓  User registered
+  ⚠  Rate limit approaching
+  ✗  DB failed  → Is your DB running?
+```
 
 ---
 
-## Features
-
-| Feature | Details |
-|---|---|
-| **6 Log Levels** | INFO, SUCCESS, WARN, ERROR, DEBUG, HTTP |
-| **Box-style output** | Single border (info/debug), double border (warn/error) |
-| **Browser support** | CSS-styled console groups, same import |
-| **Auto-redaction** | password, token, apiKey, aadhaar, SSN, credit card — zero config |
-| **Request ID** | AsyncLocalStorage — auto threads ID through all logs in a request |
-| **File rotation** | Daily, hourly, or size-based — built-in, no extra packages |
-| **HTTP middleware** | `app.use(logger.middleware())` for Express/NestJS/Fastify |
-| **Error hints** | ECONNREFUSED, ENOENT, 401 etc → plain English explanation |
-| **Serverless-safe** | Detects Lambda/Vercel/Netlify, flushes logs before freeze |
-| **Production-aware** | Auto-mutes DEBUG+INFO in production |
-| **Zero dependencies** | Pure Node.js built-ins only |
-
----
-
-## Configuration
+## ⚙️ Full Config
 
 ```js
-import { GlowLogger } from 'glowlog';
-
 const logger = new GlowLogger({
-  name:           'my-app',    // shown in startup banner
-  file:           true,        // save logs to files
-  fileOptions: {
-    dir:          './logs',
-    rotation:     'daily',     // 'daily' | 'hourly' | 'size'
-    maxSizeMB:    5,           // only for rotation: 'size'
+
+  // ── DISPLAY ──────────────────────────────────────────────────
+  style:      'box',        // 'box' | 'line' | 'compact' | 'minimal'
+  spacing:    1,            //  0 | 1 | 2  blank lines between logs
+  timeFormat: 'HH:MM:SS',  // 'HH:MM' | 'DD Mon HH:MM:SS' | 'ISO' | false
+
+  // ── SHOW / HIDE FIELDS ────────────────────────────────────────
+  show: {
+    timestamp: true,   // time value
+    source:    true,   // file:line  (auto-detected!)
+    label:     true,   // INFO / ERROR / WARN label
+    icon:      true,   // ● ✓ ⚠ ✗ ◆ ⚡
+    requestId: true,   // req ID from AsyncLocalStorage
+    meta:      true,   // extra key:value data
+    hint:      true,   // plain English error hints
+    stack:     false,  // stack trace lines
+    divider:   true,   // separator lines inside box
   },
-  redact:         true,        // auto-redact sensitive fields (default: true)
-  requestId:      true,        // include request ID in logs (default: true)
-  catchErrors:    true,        // capture uncaughtException + unhandledRejection
-  productionSafe: true,        // mute DEBUG+INFO in NODE_ENV=production
-  silent:         false,       // suppress all output
+
+  // ── FILE LOGGING ──────────────────────────────────────────────
+  file: true,
+  fileOptions: {
+    dir:       './logs',   // where to store logs
+    rotation:  'daily',   // 'daily' | 'hourly' | 'size' | 'none'
+    maxSizeMB: 10,         // size-based rotation limit
+    maxFiles:  7,          // auto-delete files older than N
+    compress:  true,       // gzip old files automatically
+    format:    'json',     // 'text' | 'json'
+    separate:  true,       // separate error.log file
+  },
+
+  // ── FEATURES ─────────────────────────────────────────────────
+  redact:         true,    // auto-redact passwords, tokens, API keys
+  requestId:      true,    // thread req ID via AsyncLocalStorage
+  catchErrors:    true,    // capture uncaughtException + unhandledRejection
+  productionSafe: true,    // mute DEBUG+INFO in NODE_ENV=production
+
+  // Log sampling — only log X% in production
+  sampling: {
+    INFO:    0.1,   // 10% of INFO logs
+    DEBUG:   0.05,  // 5% of DEBUG logs
+    WARN:    1.0,   // 100% always
+    ERROR:   1.0,   // 100% always
+  },
 });
 ```
 
 ---
 
-## Request ID — Thread ID Through Every Log
+## 🕐 Timestamp Formats
 
 ```js
-import { GlowLogger, requestIdMiddleware, withContext } from 'glowlog';
-
-const logger = new GlowLogger();
-
-// Express / NestJS — auto-generates requestId per request
-app.use(requestIdMiddleware());
-app.use(logger.middleware());
-
-// Every log inside a request automatically shows Req ID:
-app.get('/users', (req, res) => {
-  logger.info('Fetching users');     // shows: Req ID: req_abc123
-  logger.debug('Query executed');    // shows: Req ID: req_abc123
-  res.json(users);
-});
-
-// For queues, crons, scripts — manual context
-await withContext({ requestId: 'job_001' }, async () => {
-  logger.info('Processing batch');   // shows: Req ID: job_001
-});
+timeFormat: 'HH:MM:SS'              // 09:15:42
+timeFormat: 'HH:MM'                 // 09:15
+timeFormat: 'DD Mon HH:MM:SS'       // 21 Apr 09:15:42
+timeFormat: 'DD Month YYYY HH:MM AM'// 21 April 2026  9:15 AM
+timeFormat: 'ISO'                   // 2026-04-21T09:15:42.000Z
+timeFormat: false                   // hidden completely
 ```
 
 ---
 
-## Auto-Redaction
+## 👶 Child Loggers
 
-Works automatically — no config needed:
+Module-scoped loggers that inherit parent config:
+
+```js
+const logger   = new GlowLogger({ style: 'compact' });
+const dbLogger = logger.child('database');
+const authLog  = logger.child('auth');
+
+dbLogger.info('Query executed', { ms: 45 });
+// ● INFO [database]  → Query executed  ms=45
+
+authLog.error('Login failed', { userId: 'u_001' });
+// ✗ ERROR [auth]  → Login failed  userId=u_001
+```
+
+---
+
+## 🔒 Auto-Redaction
+
+Zero config. Works automatically:
 
 ```js
 logger.info('Login', {
   username: 'adarsh',
-  password: 'secret123',       // → [REDACTED]
-  token:    'eyJhbGci...',     // → [REDACTED]
-  ip:       '192.168.1.1',     // → shown (not sensitive)
+  password: 'secret123',   // → [REDACTED]
+  token:    'eyJhbGci...',  // → [REDACTED]
+  ip:       '192.168.1.1', // → shown (not sensitive)
 });
 ```
 
@@ -169,112 +218,226 @@ Add your own sensitive keys:
 
 ```js
 import { addSensitiveKey } from 'glowlog';
-
-addSensitiveKey('aadhaarNumber');
+addSensitiveKey('aadhaar');
 addSensitiveKey('panNumber');
 ```
 
 ---
 
-## HTTP Logging
+## 🧵 Request ID Threading
+
+Every log in a request carries the same ID — automatically:
 
 ```js
-// Express
+import { GlowLogger, requestIdMiddleware, withContext } from 'glowlog';
+
+const logger = new GlowLogger();
+
+// Express / NestJS
+app.use(requestIdMiddleware());
 app.use(logger.middleware());
-// Logs every request:
-// ⚡ HTTP  POST  /api/login  200  123ms
 
-// Or manually:
-logger.http('GET', '/api/users', 200, 45);
+// Manual (queues, crons, scripts)
+await withContext({ requestId: 'job_001' }, async () => {
+  logger.info('Processing batch');  // → Req ID: job_001
+  logger.debug('Step 1 done');     // → Req ID: job_001
+});
 ```
 
 ---
 
-## Presets
+## 📁 File Rotation
+
+```
+logs/
+├── app-2026-04-21.log        ← today (active)
+├── app-2026-04-20.log.gz     ← yesterday (compressed)
+├── app-2026-04-19.log.gz     ← 2 days ago
+├── app-2026-04-18.log.gz     ← 3 days ago
+│   ...
+└── error-2026-04-21.log      ← separate error log (if separate: true)
+```
+
+Files beyond `maxFiles` are **auto-deleted**. Old files are **auto-compressed** to `.gz`.
+
+---
+
+## 🎯 Log Sampling
+
+In high traffic — log only a % of verbose logs:
 
 ```js
-import { createDevLogger, createProductionLogger, createNestLogger } from 'glowlog/presets';
-
-// Development — all levels, no file
-const logger = createDevLogger('my-app');
-
-// Production — WARN+ only, daily file rotation
-const logger = createProductionLogger('my-app', './logs');
-
-// NestJS — implements LoggerService interface
-const logger = createNestLogger('NestApp');
-app.useLogger(logger);  // drop-in for NestJS
+sampling: {
+  DEBUG: 0.05,  // 5% — very sparse
+  INFO:  0.1,   // 10% — reduce noise
+  WARN:  1.0,   // 100% — always show
+  ERROR: 1.0,   // 100% — always show
+}
 ```
 
 ---
 
-## Serverless (Lambda / Vercel / Netlify)
+## 📦 Presets
+
+Zero-config shortcuts for common setups:
+
+```js
+import { dev, prod, ci, neat, nest } from 'glowlog/presets';
+
+const logger = dev('app');    // box + all fields + colors
+const logger = prod('app');   // compact + json file + gzip + 14 days
+const logger = ci('app');     // minimal + no noise
+const logger = neat('app');   // line style, middle ground
+const nestLog = nest('App');  // NestJS LoggerService compatible
+```
+
+### NestJS
+
+```ts
+// main.ts
+import { nest } from 'glowlog/presets';
+import { requestIdMiddleware } from 'glowlog';
+
+app.use(requestIdMiddleware());
+app.useLogger(nest('MyApp', './logs'));
+```
+
+---
+
+## 🌐 Express Middleware
+
+```js
+const logger = new GlowLogger();
+
+// Logs every HTTP request automatically
+app.use(requestIdMiddleware());  // thread request ID
+app.use(logger.middleware());    // log HTTP requests
+```
+
+Output:
+```
+● 09:15:42  HTTP  POST  /api/login   200  123ms
+✗ 09:15:43  HTTP  GET   /api/secret  401    8ms
+⚡ 09:15:44  HTTP  POST  /api/payment 500  2341ms  ← red (slow + error)
+```
+
+---
+
+## 💡 Plain English Error Hints
+
+No more cryptic Node.js errors:
+
+| Raw Error | glowlog Shows |
+|---|---|
+| `ECONNREFUSED` | → Could not connect — is the server/database running? |
+| `ENOTFOUND` | → Server not found — check the URL or internet |
+| `ENOENT` | → File not found — check the path |
+| `EADDRINUSE` | → Port already in use — try a different port |
+| `401` | → Unauthorized — check API key or credentials |
+| `MODULE_NOT_FOUND` | → Did you run npm install? |
+
+---
+
+## 🌐 Browser Support
+
+Same import, auto-detected environment:
+
+```js
+import { GlowLogger } from 'glowlog';
+
+const logger = new GlowLogger();
+// In Node: beautiful ANSI terminal output
+// In Browser: CSS-styled console groups
+```
+
+---
+
+## 🔄 Runtime Changes
+
+```js
+logger.setLevel('WARN');   // only WARN + ERROR from now
+logger.setStyle('compact');// switch style live
+logger.setSpacing(0);      // remove spacing
+
+logger.banner('MyApp v2.0'); // print a big banner
+logger.files();              // list all log files
+logger.clearFiles();         // delete all log files
+```
+
+---
+
+## 📊 Log Files Management
+
+```js
+logger.files();
+// ● app-2026-04-21.log         12.4 KB
+// ● app-2026-04-20.log.gz       3.1 KB
+// ● error-2026-04-21.log        1.2 KB
+
+logger.clearFiles(); // delete all
+```
+
+---
+
+## ⚡ Serverless (Lambda / Vercel / Netlify)
 
 ```js
 import { GlowLogger, withLogFlush } from 'glowlog';
 
 const logger = new GlowLogger();
 
-// Wrap handler — auto-flushes all logs before function exits
+// Wrap handler — auto-flushes before function freezes
 export const handler = withLogFlush(async (event) => {
-  logger.info('Processing event', { id: event.id });
+  logger.info('Event received', { id: event.id });
   return { statusCode: 200 };
 });
 ```
 
 ---
 
-## NestJS — Full Setup
+## 📋 All Log Levels
 
-```js
-// logger.module.ts
-import { GlowLogger, requestIdMiddleware } from 'glowlog';
-import { createNestLogger } from 'glowlog/presets';
-
-export const glowLogger = new GlowLogger({
-  name: 'NestApp',
-  file: true,
-  fileOptions: { rotation: 'daily' },
-  redact: true,
-});
-
-// main.ts
-app.use(requestIdMiddleware());      // thread request ID
-app.use(glowLogger.middleware());    // HTTP logs
-app.useLogger(createNestLogger());  // NestJS log service
-```
-
----
-
-## Log Levels
-
-| Level | Icon | Border | Color | When to use |
+| Method | Icon | Border | Color | When |
 |---|---|---|---|---|
-| `info` | ● | single | cyan | General events |
-| `success` | ✓ | single | green | Completed actions |
-| `warn` | ⚠ | **double** | yellow | Attention needed |
-| `error` | ✗ | **double** | red | Something broke |
-| `debug` | ◆ | single | magenta | Dev details |
-| `http` | ⚡ | single | blue | HTTP requests |
+| `logger.info()` | ● | single | cyan | General info |
+| `logger.success()` | ✓ | single | green | Completed actions |
+| `logger.warn()` | ⚠ | **double** | yellow | Needs attention |
+| `logger.error()` | ✗ | **double** | red | Something broke |
+| `logger.debug()` | ◆ | single | magenta | Dev details |
+| `logger.http()` | ⚡ | single | blue | HTTP requests |
 
 ---
 
-## vs Winston / Pino
+## 🏆 vs Winston / Pino
 
 | | Winston | Pino | **glowlog** |
 |---|---|---|---|
 | Packages needed | 6+ | 3+ | **1** |
-| Beautiful terminal output | manual setup | needs `pino-pretty` | **built-in** |
-| Browser support | ❌ | partial | **✅ full** |
-| Auto-redaction | ❌ | manual | **✅ auto** |
+| Beautiful terminal | manual | needs pino-pretty | **built-in** |
+| Browser support | ❌ | partial | **✅** |
+| Auto-redaction | ❌ | manual | **✅ zero config** |
 | Request ID | 3 packages | manual | **✅ built-in** |
-| File rotation | separate package | separate package | **✅ built-in** |
-| HTTP middleware | separate package | separate package | **✅ built-in** |
-| Serverless-safe | ❌ | partial | **✅ built-in** |
+| File rotation | separate pkg | separate pkg | **✅ built-in** |
+| File compression | ❌ | ❌ | **✅ gzip auto** |
+| Child loggers | buggy | ✅ | **✅** |
+| Error hints | ❌ | ❌ | **✅** |
+| Log sampling | ❌ | ❌ | **✅** |
 | Zero dependencies | ❌ | ❌ | **✅** |
 
 ---
 
-## License
+## 📄 License
 
-MIT © Adarsh
+MIT © [Adarsh](https://github.com/growbharatbiz)
+
+---
+
+## 🤝 Contributing
+
+Issues, bugs, ideas — all welcome!
+
+- 🐛 [Report a bug](https://github.com/growbharatbiz/glowlog/issues)
+- 💡 [Request a feature](https://github.com/growbharatbiz/glowlog/issues)
+- 🔀 [Submit a PR](https://github.com/growbharatbiz/glowlog/pulls)
+
+**glowlog is open source and free forever.**
