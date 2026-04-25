@@ -428,7 +428,7 @@ export const handler = withLogFlush(async (event) => {
 
 ## 📄 License
 
-MIT © [Adarsh](https://github.com/growbharatbiz)
+MIT © [Adarsh](https://github.com/dixitadarsh)
 
 ---
 
@@ -436,8 +436,8 @@ MIT © [Adarsh](https://github.com/growbharatbiz)
 
 Issues, bugs, ideas — all welcome!
 
-- 🐛 [Report a bug](https://github.com/growbharatbiz/glowlog/issues)
-- 💡 [Request a feature](https://github.com/growbharatbiz/glowlog/issues)
-- 🔀 [Submit a PR](https://github.com/growbharatbiz/glowlog/pulls)
+- 🐛 [Report a bug](https://github.com/dixitadarsh/glowlog/issues)
+- 💡 [Request a feature](https://github.com/dixitadarsh/glowlog/issues)
+- 🔀 [Submit a PR](https://github.com/dixitadarsh/glowlog/pulls)
 
 **glowlog is open source and free forever.**

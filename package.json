@@ -53,11 +53,11 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/growbharatbiz/glowlog"
+    "url": "https://github.com/dixitadarsh/glowlog"
   },
   "homepage": "https://glowlog.dev",
   "bugs": {
-    "url": "https://github.com/growbharatbiz/glowlog/issues"
+    "url": "https://github.com/dixitadarsh/glowlog/issues"
   },
   "engines": {
     "node": ">=16.0.0"
