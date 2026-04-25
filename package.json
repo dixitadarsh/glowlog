@@ -1,33 +1,66 @@
 {
   "name": "glowlog",
-  "version": "3.0.0",
+  "version": "4.0.0",
   "description": "The last Node.js logger you'll ever need. Beautiful, configurable, zero dependencies.",
   "main": "src/index.js",
   "type": "module",
   "exports": {
-    ".":            "./src/index.js",
-    "./presets":    "./src/presets/index.js",
-    "./request":   "./src/plugins/request.js",
-    "./redact":    "./src/plugins/redact.js",
-    "./serverless":"./src/plugins/serverless.js"
+    ".": "./src/index.js",
+    "./presets": "./src/presets/index.js",
+    "./request": "./src/plugins/request.js",
+    "./redact": "./src/plugins/redact.js",
+    "./serverless": "./src/plugins/serverless.js"
   },
-  "bin": { "glowlog": "./bin/init.js" },
+  "bin": {
+    "glowlog": "./bin/init.js"
+  },
   "scripts": {
-    "demo":   "node src/demo.js",
-    "init":   "node bin/init.js"
+    "demo": "node src/demo.js",
+    "init": "node bin/init.js"
   },
-  "files": ["src","bin","README.md","LICENSE"],
+  "files": [
+    "src",
+    "bin",
+    "README.md",
+    "LICENSE"
+  ],
   "keywords": [
-    "logger","logging","colorful","beautiful","terminal","browser",
-    "nodejs","express","nestjs","fastify","react","angular","vue",
-    "file-rotation","redaction","request-id","serverless","zero-dependency",
-    "structured-logging","child-logger","winston","pino","alternative"
+    "logger",
+    "logging",
+    "colorful",
+    "beautiful",
+    "terminal",
+    "browser",
+    "nodejs",
+    "express",
+    "nestjs",
+    "fastify",
+    "react",
+    "angular",
+    "vue",
+    "file-rotation",
+    "redaction",
+    "request-id",
+    "serverless",
+    "zero-dependency",
+    "structured-logging",
+    "child-logger",
+    "winston",
+    "pino",
+    "alternative"
   ],
   "author": "Adarsh",
   "license": "MIT",
-  "repository": { "type": "git", "url": "https://github.com/growbharatbiz/glowlog" },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/growbharatbiz/glowlog"
+  },
   "homepage": "https://glowlog.dev",
-  "bugs": { "url": "https://github.com/growbharatbiz/glowlog/issues" },
-  "engines": { "node": ">=16.0.0" },
+  "bugs": {
+    "url": "https://github.com/growbharatbiz/glowlog/issues"
+  },
+  "engines": {
+    "node": ">=16.0.0"
+  },
   "dependencies": {}
 }
